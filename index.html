@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futures Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function FuturesAnalysisDashboard() {
+            const [question, setQuestion] = useState('');
+            const [apiKey, setApiKey] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [analysis, setAnalysis] = useState(null);
+            const [error, setError] = useState('');
+            const [showHistory, setShowHistory] = useState(false);
+            const [history, setHistory] = useState([]);
+
+            useEffect(() => {
+                loadHistory();
+            }, []);
+
+            const loadHistory = async () => {
+                try {
+                    const keys = await window.storage.list('analysis:');
+                    if (keys && keys.keys) {
+                        const analyses = [];
+                        for (const key of keys.keys) {
+                            try {
+                                const result = await window.storage.get(key);
+                                if (result) analyses.push(JSON.parse(result.value));
+                            } catch (e) {
+                                console.log('Could not load:', key);
+                            }
+                        }
+                        analyses.sort((a, b) => b.timestamp - a.timestamp);
+                        setHistory(analyses);
+                    }
+                } catch (e) {
+                    console.log('No history available');
+                }
+            };
+
+            const analyzeQuestion = async () => {
+                if (!question.trim()) {
+                    setError('Please enter a question');
+                    return;
+                }
+                if (!apiKey.trim()) {
+                    setError('Please enter your Anthropic API key');
+                    return;
+                }
+
+                setLoading(true);
+                setError('');
+                setAnalysis(null);
+
+                try {
+                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': apiKey,
+                            'anthropic-version': '2023-06-01'
+                        },
+                        body: JSON.stringify({
+                            model: 'claude-sonnet-4-20250514',
+                            max_tokens: 4000,
+                            messages: [{
+                                role: 'user',
+                                content: `You are a strategic foresight analyst. Analyze the following question using the PESTLE-M framework (Political, Economic, Social, Technological, Legal, Environmental, Military).
+
+Question: "${question}"
+
+Provide your analysis in the following JSON format only (no other text):
+
+{
+  "pestle_analysis": {
+    "political": "2-3 sentence analysis",
+    "economic": "2-3 sentence analysis",
+    "social": "2-3 sentence analysis",
+    "technological": "2-3 sentence analysis",
+    "legal": "2-3 sentence analysis",
+    "environmental": "2-3 sentence analysis",
+    "military": "2-3 sentence analysis"
+  },
+  "scenarios": [
+    {
+      "type": "Baseline",
+      "description": "Most realistic scenario based on current trends (3-4 sentences)",
+      "probability": 60,
+      "timeframe": "timeframe estimate",
+      "key_indicators": ["indicator 1", "indicator 2", "indicator 3"]
+    },
+    {
+      "type": "Plausible",
+      "description": "Alternative possible scenario (3-4 sentences)",
+      "probability": 30,
+      "timeframe": "timeframe estimate",
+      "key_indicators": ["indicator 1", "indicator 2", "indicator 3"]
+    },
+    {
+      "type": "Wildcard",
+      "description": "Low probability, high impact scenario (3-4 sentences)",
+      "probability": 10,
+      "timeframe": "timeframe estimate",
+      "key_indicators": ["indicator 1", "indicator 2", "indicator 3"]
+    }
+  ],
+  "overall_assessment": "2-3 sentence summary of the analysis"
+}`
+                            }]
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error.message || 'API request failed');
+                    }
+
+                    const textContent = data.content
+                        .filter(item => item.type === 'text')
+                        .map(item => item.text)
+                        .join('');
+
+                    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+                    if (!jsonMatch) {
+                        throw new Error('Could not parse response');
+                    }
+
+                    const parsedAnalysis = JSON.parse(jsonMatch[0]);
+                    setAnalysis(parsedAnalysis);
+                    
+                    await saveAnalysis(parsedAnalysis);
+                    await loadHistory();
+                } catch (err) {
+                    setError(err.message || 'An error occurred during analysis');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const saveAnalysis = async (analysisData) => {
+                try {
+                    const id = Date.now().toString();
+                    const data = {
+                        id,
+                        question,
+                        analysis: analysisData,
+                        timestamp: Date.now()
+                    };
+                    await window.storage.set(`analysis:${id}`, JSON.stringify(data));
+                } catch (e) {
+                    console.error('Could not save analysis:', e);
+                }
+            };
+
+            const loadHistoricalAnalysis = (item) => {
+                setQuestion(item.question);
+                setAnalysis(item.analysis);
+                setShowHistory(false);
+            };
+
+            const downloadReport = () => {
+                if (!analysis) return;
+
+                const content = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Futures Analysis Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
+        h1 { color: #1e40af; border-bottom: 3px solid #1e40af; padding-bottom: 10px; }
+        h2 { color: #334155; margin-top: 30px; }
+        h3 { color: #475569; }
+        .question { background: #f1f5f9; padding: 15px; border-left: 4px solid #3b82f6; margin: 20px 0; }
+        .pestle-item { margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px; }
+        .pestle-label { font-weight: bold; color: #0f766e; margin-bottom: 8px; text-transform: uppercase; }
+        .scenario { margin: 20px 0; padding: 20px; border: 2px solid #cbd5e1; border-radius: 8px; }
+        .scenario-baseline { border-color: #3b82f6; background: #eff6ff; }
+        .scenario-plausible { border-color: #f59e0b; background: #fffbeb; }
+        .scenario-wildcard { border-color: #a855f7; background: #faf5ff; }
+        .probability { font-size: 24px; font-weight: bold; color: #1e40af; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #cbd5e1; font-size: 12px; color: #64748b; }
+        ul { margin: 10px 0; padding-left: 20px; }
+        li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Futures Analysis Report</h1>
+    <div style="color: #64748b; margin-bottom: 30px;">Generated: ${new Date().toLocaleDateString()}</div>
+    
+    <div class="question">
+        <strong>Question:</strong> ${question}
+    </div>
+
+    <h2>PESTLE-M Framework Analysis</h2>
+    ${Object.entries(analysis.pestle_analysis).map(([key, value]) => `
+        <div class="pestle-item">
+            <div class="pestle-label">${key}</div>
+            <div>${value}</div>
+        </div>
+    `).join('')}
+
+    <h2>Overall Assessment</h2>
+    <p>${analysis.overall_assessment}</p>
+
+    <h2>Future Scenarios</h2>
+    ${analysis.scenarios.map(scenario => `
+        <div class="scenario scenario-${scenario.type.toLowerCase()}">
+            <h3>${scenario.type} Scenario <span class="probability">${scenario.probability}%</span></h3>
+            <p><strong>Timeframe:</strong> ${scenario.timeframe}</p>
+            <p>${scenario.description}</p>
+            <p><strong>Key Indicators:</strong></p>
+            <ul>
+                ${scenario.key_indicators.map(ind => `<li>${ind}</li>`).join('')}
+            </ul>
+        </div>
+    `).join('')}
+
+    <div class="footer">
+        This report was generated by the Futures Analysis Dashboard using PESTLE-M strategic foresight methodology.
+    </div>
+</body>
+</html>`;
+                
+                const blob = new Blob([content], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `futures-analysis-${Date.now()}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            const pestleCategories = [
+                { key: 'political', label: 'Political', color: 'bg-blue-100 text-blue-800' },
+                { key: 'economic', label: 'Economic', color: 'bg-green-100 text-green-800' },
+                { key: 'social', label: 'Social', color: 'bg-purple-100 text-purple-800' },
+                { key: 'technological', label: 'Technological', color: 'bg-cyan-100 text-cyan-800' },
+                { key: 'legal', label: 'Legal', color: 'bg-amber-100 text-amber-800' },
+                { key: 'environmental', label: 'Environmental', color: 'bg-emerald-100 text-emerald-800' },
+                { key: 'military', label: 'Military', color: 'bg-red-100 text-red-800' }
+            ];
+
+            const scenarioColors = {
+                'Baseline': 'border-blue-500 bg-blue-50',
+                'Plausible': 'border-amber-500 bg-amber-50',
+                'Wildcard': 'border-purple-500 bg-purple-50'
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+                    <div className="max-w-6xl mx-auto">
+                        <header className="text-center mb-8">
+                            <h1 className="text-4xl font-bold text-slate-800 mb-2">Futures Analysis Dashboard</h1>
+                            <p className="text-slate-600">Strategic foresight powered by PESTLE-M framework</p>
+                        </header>
+
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            {history.length > 0 && (
+                                <div className="flex gap-2 mb-4">
+                                    <button
+                                        onClick={() => setShowHistory(!showHistory)}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                                    >
+                                        📊 History ({history.length})
+                                    </button>
+                                    {analysis && (
+                                        <button
+                                            onClick={downloadReport}
+                                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                                        >
+                                            📥 Download Report
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {showHistory && history.length > 0 && (
+                                <div className="mb-4 max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+                                    {history.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => loadHistoricalAnalysis(item)}
+                                            className="w-full text-left p-4 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    <p className="font-medium text-slate-800 line-clamp-2">{item.question}</p>
+                                                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                                                        🕐 {new Date(item.timestamp).toLocaleString()}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    Anthropic API Key
+                                </label>
+                                <input
+                                    type="password"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="sk-ant-..."
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Get your API key from console.anthropic.com
+                                </p>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-slate-700 mb-2">
+                                    Your Question About the Future
+                                </label>
+                                <textarea
+                                    value={question}
+                                    onChange={(e) => setQuestion(e.target.value)}
+                                    placeholder="e.g., Will Taiwan be invaded by China?"
+                                    rows={3}
+                                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                />
+                            </div>
+
+                            <button
+                                onClick={analyzeQuestion}
+                                disabled={loading}
+                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-semibold py-3 px-6 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                        Analyzing...
+                                    </>
+                                ) : (
+                                    <>
+                                        🚀 Analyze Future Scenario
+                                    </>
+                                )}
+                            </button>
+
+                            {error && (
+                                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                                    <span className="text-red-600">⚠️</span>
+                                    <p className="text-red-800 text-sm">{error}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {analysis && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h2 className="text-2xl font-bold text-slate-800 mb-4">PESTLE-M Analysis</h2>
+                                    <div className="grid md:grid-cols-2 gap-4">
+                                        {pestleCategories.map(({ key, label, color }) => (
+                                            <div key={key} className="border border-slate-200 rounded-lg p-4">
+                                                <div className={`inline-block px-3 py-1 rounded-full text-sm font-semibold mb-2 ${color}`}>
+                                                    {label}
+                                                </div>
+                                                <p className="text-slate-700 text-sm">{analysis.pestle_analysis[key]}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-lg shadow-lg p-6">
+                                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Future Scenarios</h2>
+                                    <p className="text-slate-600 mb-6">{analysis.overall_assessment}</p>
+                                    
+                                    <div className="space-y-4">
+                                        {analysis.scenarios.map((scenario, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`border-l-4 rounded-lg p-5 ${scenarioColors[scenario.type]}`}
+                                            >
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <h3 className="text-xl font-bold text-slate-800">{scenario.type} Scenario</h3>
+                                                    <div className="text-right">
+                                                        <div className="text-2xl font-bold text-slate-800">{scenario.probability}%</div>
+                                                        <div className="text-xs text-slate-600">Probability</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <p className="text-slate-700 mb-3">{scenario.description}</p>
+                                                
+                                                <div className="flex items-center gap-4 text-sm mb-3">
+                                                    <div>
+                                                        <span className="font-semibold text-slate-700">Timeframe:</span>
+                                                        <span className="text-slate-600 ml-1">{scenario.timeframe}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <p className="font-semibold text-slate-700 text-sm mb-2">Key Indicators:</p>
+                                                    <ul className="list-disc list-inside space-y-1">
+                                                        {scenario.key_indicators.map((indicator, i) => (
+                                                            <li key={i} className="text-slate-600 text-sm">{indicator}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<FuturesAnalysisDashboard />);
+    </script>
+</body>
+</html>
