@@ -75,8 +75,10 @@ const m=txt.match(/\{[\s\S]*\}/);
 if(!m)throw new Error('Parse error');
 const parsed=JSON.parse(m[0]);
 setGeoAn(parsed);
+try{
 const id=Date.now().toString();
 await window.storage.set(`geo:${id}`,JSON.stringify({id,question:geoQ,analysis:parsed,timestamp:Date.now()}));
+}catch(e){console.log('Storage error:',e)}
 await loadGeoHist();
 }catch(e){setGeoErr(e.message||'Error')}finally{setGeoLoad(false)}
 };
@@ -93,8 +95,10 @@ const m=txt.match(/\{[\s\S]*\}/);
 if(!m)throw new Error('Parse error');
 const parsed=JSON.parse(m[0]);
 setCyberAn(parsed);
+try{
 const id=Date.now().toString();
 await window.storage.set(`cyber:${id}`,JSON.stringify({id,scenario:cyberQ,analysis:parsed,timestamp:Date.now()}));
+}catch(e){console.log('Storage error:',e)}
 await loadCyberHist();
 }catch(e){setCyberErr(e.message||'Error')}finally{setCyberLoad(false)}
 };
