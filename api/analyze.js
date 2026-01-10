@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
+        max_tokens: 4500,
         messages: [{
           role: 'user',
           content: `You are a strategic foresight analyst. Analyze the following question using the PESTLE-M framework (Political, Economic, Social, Technological, Legal, Environmental, Military).
@@ -75,7 +75,21 @@ Provide your analysis in the following JSON format only (no other text):
       "key_indicators": ["indicator 1", "indicator 2", "indicator 3"]
     }
   ],
-  "overall_assessment": "2-3 sentence summary of the analysis"
+  "overall_assessment": "2-3 sentence summary of the analysis",
+  "strategic_questions": [
+    "Strategic question 1 that executives should ask their organization",
+    "Strategic question 2 that executives should ask their organization",
+    "Strategic question 3 that executives should ask their organization",
+    "Strategic question 4 that executives should ask their organization",
+    "Strategic question 5 that executives should ask their organization"
+  ],
+  "data_sources": [
+    "Data source or factor 1 that informed this analysis",
+    "Data source or factor 2 that informed this analysis",
+    "Data source or factor 3 that informed this analysis",
+    "Data source or factor 4 that informed this analysis",
+    "Data source or factor 5 that informed this analysis"
+  ]
 }`
         }]
       })
