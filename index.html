@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Futures Analysis Dashboard</title>
+    <title>Future Geopolitical Scenario Analysis</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -164,85 +164,11 @@
                 'Wildcard': 'border-purple-500 bg-purple-50'
             };
 
-            const RiskMatrix = () => {
-                const risks = analysis.scenarios.map(scenario => ({
-                    name: scenario.type,
-                    likelihood: scenario.probability,
-                    impact: scenario.type === 'Baseline' ? 60 : scenario.type === 'Plausible' ? 75 : 90
-                }));
-
-                return (
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h2 className="text-2xl font-bold text-slate-800 mb-4">Risk Assessment Matrix</h2>
-                        <p className="text-slate-600 mb-6">Visual representation of scenario likelihood vs potential impact</p>
-                        
-                        <div className="relative w-full h-96 border-2 border-slate-300 rounded-lg bg-gradient-to-tr from-green-50 via-yellow-50 to-red-50">
-                            {/* Y-axis label */}
-                            <div className="absolute -left-16 top-1/2 -translate-y-1/2 -rotate-90 text-sm font-semibold text-slate-700">
-                                Impact →
-                            </div>
-                            
-                            {/* X-axis label */}
-                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-8 text-sm font-semibold text-slate-700">
-                                Likelihood →
-                            </div>
-
-                            {/* Grid lines */}
-                            <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-                                {[...Array(9)].map((_, i) => (
-                                    <div key={i} className="border border-slate-200"></div>
-                                ))}
-                            </div>
-
-                            {/* Zone labels */}
-                            <div className="absolute top-2 left-2 text-xs font-semibold text-green-700 bg-white/70 px-2 py-1 rounded">LOW</div>
-                            <div className="absolute top-2 right-2 text-xs font-semibold text-orange-700 bg-white/70 px-2 py-1 rounded">MEDIUM</div>
-                            <div className="absolute bottom-2 right-2 text-xs font-semibold text-red-700 bg-white/70 px-2 py-1 rounded">HIGH</div>
-
-                            {/* Plot scenarios */}
-                            {risks.map((risk, idx) => {
-                                const x = (risk.likelihood / 100) * 100;
-                                const y = 100 - (risk.impact / 100) * 100;
-                                const colors = {
-                                    'Baseline': 'bg-blue-500',
-                                    'Plausible': 'bg-amber-500',
-                                    'Wildcard': 'bg-purple-500'
-                                };
-                                
-                                return (
-                                    <div
-                                        key={idx}
-                                        className={`absolute w-16 h-16 ${colors[risk.name]} rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition-transform`}
-                                        style={{ left: `${x}%`, top: `${y}%` }}
-                                        title={`${risk.name}: ${risk.likelihood}% likelihood, ${risk.impact}% impact`}
-                                    >
-                                        {risk.name}
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        <div className="mt-6 grid grid-cols-3 gap-4">
-                            {risks.map((risk, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-sm">
-                                    <div className={`w-4 h-4 rounded-full ${
-                                        risk.name === 'Baseline' ? 'bg-blue-500' :
-                                        risk.name === 'Plausible' ? 'bg-amber-500' : 'bg-purple-500'
-                                    }`}></div>
-                                    <span className="font-medium">{risk.name}:</span>
-                                    <span className="text-slate-600">{risk.likelihood}% / {risk.impact}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            };
-
             return (
                 <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
                     <div className="max-w-6xl mx-auto">
                         <header className="text-center mb-8">
-                            <h1 className="text-4xl font-bold text-slate-800 mb-2">Futures Analysis Dashboard</h1>
+                            <h1 className="text-4xl font-bold text-slate-800 mb-2">Future Geopolitical Scenario Analysis</h1>
                             <p className="text-slate-600">Strategic foresight powered by PESTLE-M framework</p>
                         </header>
 
@@ -305,12 +231,12 @@
 
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                                    Your Question About the Future
+                                    Ask your question about the future
                                 </label>
                                 <textarea
                                     value={question}
                                     onChange={(e) => setQuestion(e.target.value)}
-                                    placeholder="e.g., Will Taiwan be invaded by China?"
+                                    placeholder="e.g. Will China invade Taiwan?"
                                     rows={3}
                                     className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                 />
@@ -346,7 +272,7 @@
                             <div id="pdf-content" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
                                 <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif', maxWidth: '800px' }}>
                                     <h1 style={{ color: '#1e40af', borderBottom: '3px solid #1e40af', paddingBottom: '10px', marginBottom: '20px' }}>
-                                        Futures Analysis Report
+                                        Future Geopolitical Scenario Analysis Report
                                     </h1>
                                     <div style={{ color: '#64748b', marginBottom: '30px' }}>
                                         Generated: {new Date().toLocaleDateString()}
@@ -409,7 +335,7 @@
                                     )}
 
                                     <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #cbd5e1', fontSize: '12px', color: '#64748b' }}>
-                                        This report was generated by the Futures Analysis Dashboard using PESTLE-M strategic foresight methodology.
+                                        This report was generated by Future Geopolitical Scenario Analysis using PESTLE-M strategic foresight methodology.
                                     </div>
                                 </div>
                             </div>
@@ -470,8 +396,6 @@
                                         ))}
                                     </div>
                                 </div>
-
-                                <RiskMatrix />
 
                                 {analysis.strategic_questions && (
                                     <div className="bg-white rounded-lg shadow-lg p-6">
