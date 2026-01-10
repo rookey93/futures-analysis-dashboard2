@@ -16,13 +16,77 @@ export default async function handler(req, res) {
   try {
     const { question, type } = req.body;
 
-    if (!question) {
+    if (!question && type !== 'tech') {
       return res.status(400).json({ error: 'Question is required' });
     }
 
     let prompt = '';
     
-    if (type === 'cyber') {
+    if (type === 'tech') {
+      // Emerging Technologies News Monitor
+      prompt = `You are a technology analyst monitoring emerging technologies. Search for and analyze the latest developments from the past 7 days in these sectors:
+
+1. Artificial Intelligence
+2. Quantum Computing
+3. Semiconductors
+4. Robotics (especially humanoid robotics)
+5. Space Technology (including planned missions)
+6. New Energy Technology (solar, hydrogen, nuclear)
+
+Use web search to find the most important news from each sector in the past 7 days. For each sector, provide a brief executive summary of what happened and why it matters.
+
+Provide your analysis in the following JSON format only (no other text):
+
+{
+  "technologies": [
+    {
+      "sector": "Artificial Intelligence",
+      "summary": "2-3 sentence executive summary of the most important development in the past 7 days",
+      "key_development": "One sentence highlighting the single most significant news item"
+    },
+    {
+      "sector": "Quantum Computing",
+      "summary": "2-3 sentence executive summary of the most important development in the past 7 days",
+      "key_development": "One sentence highlighting the single most significant news item"
+    },
+    {
+      "sector": "Semiconductors",
+      "summary": "2-3 sentence executive summary of the most important development in the past 7 days",
+      "key_development": "One sentence highlighting the single most significant news item"
+    },
+    {
+      "sector": "Robotics",
+      "summary": "2-3 sentence executive summary of the most important development in the past 7 days, focus on humanoid robotics",
+      "key_development": "One sentence highlighting the single most significant news item"
+    },
+    {
+      "sector": "Space Technology",
+      "summary": "2-3 sentence executive summary of the most important development in the past 7 days, include planned missions",
+      "key_development": "One sentence highlighting the single most significant news item"
+    },
+    {
+      "sector": "New Energy Technology",
+      "summary": "2-3 sentence executive summary of the most important development in the past 7 days in solar, hydrogen, or nuclear",
+      "key_development": "One sentence highlighting the single most significant news item"
+    }
+  ],
+  "executive_summary": "3-4 sentence overall summary of what these developments mean for business leaders",
+  "strategic_questions": [
+    "Strategic question 1 that executives should ask about their technology roadmap",
+    "Strategic question 2 that executives should ask about their technology roadmap",
+    "Strategic question 3 that executives should ask about their technology roadmap",
+    "Strategic question 4 that executives should ask about their technology roadmap",
+    "Strategic question 5 that executives should ask about their technology roadmap"
+  ],
+  "sources": [
+    "News source or report 1 from the past 7 days",
+    "News source or report 2 from the past 7 days",
+    "News source or report 3 from the past 7 days",
+    "News source or report 4 from the past 7 days",
+    "News source or report 5 from the past 7 days"
+  ]
+}`;
+    } else if (type === 'cyber') {
       // Cyber Business Risk Analysis
       prompt = `You are a cyber security and business risk analyst. Analyze the following cyber scenario and its business impact.
 
